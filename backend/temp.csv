@@ -1,0 +1,19 @@
+age_group,gender,category_of_work,base_weight_kg,cereals_g,pulses_g,glv_g,veg_g,roots_tubers_g,fruits_g,milk_curd_ml,fats_oils_g,energy_kcal,protein_g
+Men,male,sedentary,65,260,85,100,200,100,100,400,40,2080,72
+Men,male,moderate,65,370,120,100,200,100,100,400,40,2680,90
+Women,female,sedentary,55,190,60,100,200,100,100,300,30,1660,57
+Women,female,moderate,55,270,90,100,200,100,100,300,30,2125,72
+Pregnant,female,sedentary,55,220,75,150,200,100,150,400,40,2020,72
+Lactating (0–6m),female,sedentary,55,260,85,150,200,100,150,400,35,2245,77
+Lactating (7–12m),female,sedentary,55,250,85,150,200,100,150,400,35,2200,78
+Children 1–3y,male,sedentary,12.9,100,50,50,100,50,60,350,20,1110,38
+Children 4–6y,male,sedentary,18.3,160,60,50,100,50,75,350,20,1370,46
+Children 7–9y,male,sedentary,25.3,200,65,100,150,100,100,400,25,1710,59
+Boys 10–12y,male,sedentary,34.9,280,90,100,200,100,100,400,35,2230,76
+Girls 10–12y,female,sedentary,36.4,250,85,100,200,100,100,400,30,2060,70
+Boys 13–15y,male,sedentary,50.5,390,130,100,200,100,100,400,45,2860,95
+Girls 13–15y,female,sedentary,49.8,300,100,100,200,100,100,400,40,2410,81
+Boys 16–18y,male,sedentary,64.4,450,150,100,200,100,150,400,55,3300,107
+Girls 16–18y,female,sedentary,55.7,315,105,100,200,100,150,400,45,2490,85
+Elderly >60,male,sedentary,60,170,75,100,200,100,150,400,25,1740,62
+Elderly >60,female,sedentary,55,140,70,100,200,100,150,400,15,1530,56
