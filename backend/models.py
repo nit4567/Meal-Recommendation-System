@@ -102,3 +102,18 @@ class UserFoodPlan(Base):
     total_protein_g = Column(Float)
 
     user = relationship("User", back_populates="food_plan")
+
+class UserWeeklyPlan(Base):
+    __tablename__ = "user_weekly_plans"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    generated_at = Column(DateTime, default=datetime.now(timezone.utc))
+    
+    # Store the diseases that were active when this plan was generated
+    conditions_applied = Column(Text)  # JSON string e.g., '["thyroid", "hypertension"]'
+    
+    # Store the actual LLM output
+    plan_data = Column(Text)  # JSON string of the 7-day plan
+    
+    user = relationship("User", backref="weekly_plans")

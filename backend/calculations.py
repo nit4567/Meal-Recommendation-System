@@ -123,10 +123,7 @@ def calculate_targets(profile: UserProfile) -> dict:
     }
 
 def generate_food_plan(profile: UserProfile, ref: FoodGroupReference):
-    """
-    Generate a scaled food plan from the ICMR reference row and user profile.
-    Pure function — no DB queries here.
-    """
+    
     if not ref:
         return None
 
