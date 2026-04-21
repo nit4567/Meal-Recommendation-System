@@ -19,6 +19,7 @@ import {
   HealthAlert,
   ComingSoon,
   FoodGroupPieChart,
+  LunchSuggestion,
 } from '@components/dashboard';
 
 
@@ -86,6 +87,10 @@ export const Dashboard = () => {
         />
 
         {foodPlan && <FoodGroupPieChart foodPlan={foodPlan} />}
+
+        {foodPlan && profile && (
+          <LunchSuggestion profile={profile} foodPlan={foodPlan} />
+        )}
 
         <div className="mt-8 mb-8">
           <h3 className="text-2xl font-bold text-gray-900 mb-4">Daily Nutrient Targets</h3>

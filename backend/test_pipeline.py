@@ -1,8 +1,13 @@
 import requests
 import json
 import time
+import os
 
 BASE_URL = "http://localhost:8000"
+OUTPUT_DIR = "test_outputs"
+
+# Ensure folder exists
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def run_disease_test(case_name, conditions, output_filename):
     print(f"\n==========================================")
@@ -50,10 +55,12 @@ def run_disease_test(case_name, conditions, output_filename):
         data = plan_res.json()
         print("✅ Success! Plan generated.")
         
-        # 4. Save to file
-        with open(output_filename, "w") as f:
+        # 4. Save to test_outputs folder
+        output_path = os.path.join(OUTPUT_DIR, output_filename)
+        with open(output_path, "w") as f:
             json.dump(data, f, indent=4)
-        print(f"💾 Saved to {output_filename}")
+            
+        print(f"💾 Saved to {output_path}")
     else:
         print(f"❌ Plan Gen Failed: {plan_res.text}")
 
@@ -67,4 +74,4 @@ if __name__ == "__main__":
     run_disease_test("Obesity", ["obesity"], "test_4_obesity.json")
     run_disease_test("Constipation", ["constipation"], "test_5_constipation.json")
     
-    print("\n🎉 All tests complete! Check your project folder for the JSON files.")
+    print("\n🎉 All tests complete! Check the 'test_outputs' folder.")

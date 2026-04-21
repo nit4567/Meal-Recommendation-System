@@ -5,3 +5,4 @@ export { AdditionalNutrients } from './AdditionalNutrients';
 export { HealthAlert } from './HealthAlert';
 export { ComingSoon } from './ComingSoon';
 export { FoodGroupPieChart } from './FoodGroupPieChart';
+export { LunchSuggestion } from './LunchSuggestion';

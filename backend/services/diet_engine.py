@@ -6,6 +6,61 @@ import random
 # Ensure you have GROQ_API_KEY in your .env
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+def get_safe_menu(medical_conditions, recipes_path="recipes.json", db_path="clean_ingredients_db.json"):
+    with open(recipes_path, "r", encoding="utf-8") as f:
+        master_recipes = json.load(f)
+        
+    with open(db_path, "r", encoding="utf-8") as f:
+        ingredient_db = json.load(f)
+        
+    ing_flags = {item["food_code"]: item.get("metadata", {}) for item in ingredient_db}
+    conditions = [c.lower() for c in medical_conditions]
+    
+    safe_menu = {"breakfasts": [], "lunches": [], "dinners": []}
+    
+    for meal_type in ["breakfasts", "lunches", "dinners"]:
+        if meal_type not in master_recipes:
+            continue 
+            
+        for recipe in master_recipes[meal_type]:
+            is_safe = True
+            
+            # Look at the keys of the new ingredients_g dictionary
+            for code in recipe.get("ingredients_g", {}).keys():
+                # Skip the Z category (oils) from strict clinical IFCT filtering, 
+                # as oils are usually safe unless tracking pure fat/calories.
+                if code.startswith("Z"):
+                    continue
+                    
+                meta = ing_flags.get(code, {})
+                
+                if "hypertension" in conditions and meta.get("is_high_sodium", False):
+                    is_safe = False
+                    break 
+                if "thyroid" in conditions and meta.get("is_goitrogenic", False):
+                    is_safe = False
+                    break
+                if "obesity" in conditions and meta.get("is_high_sugar", False):
+                    is_safe = False
+                    break
+                    
+            if is_safe:
+                # Pass ALL the new macros to the LLM
+                safe_menu[meal_type].append({
+                    "meal_name": recipe["meal_name"],
+                    "calories": recipe["base_calories"],
+                    "protein_g": recipe["base_protein_g"],
+                    "carbs_g": recipe["base_carbs_g"],
+                    "fat_g": recipe["base_fat_g"],
+                    "fiber_g": recipe["base_fiber_g"],
+                    "sodium_mg": recipe["base_sodium_mg"]
+                })
+                
+    return safe_menu
+
+
+
+
 def get_smart_pantry_subset(safe_basket, max_items=60):
     """
     Groups the 500+ safe ingredients by category and picks a random subset.
@@ -67,33 +122,36 @@ def get_safe_basket(medical_conditions, db_path="clean_ingredients_db.json"):
             
     return safe_basket
 
-def generate_weekly_plan(safe_basket, targets):
-    mini_pantry = get_smart_pantry_subset(safe_basket, max_items=60)
-    basket_str = json.dumps(mini_pantry)
+
+def generate_weekly_plan(safe_menu, targets):
+    # Cap choices to save LLM tokens and ensure variety
+    for meal_type in safe_menu:
+        random.shuffle(safe_menu[meal_type])
+        safe_menu[meal_type] = safe_menu[meal_type][:10] 
+        
+    menu_str = json.dumps(safe_menu)
     
     system_prompt = """
-    You are an expert Indian Clinical Nutritionist and Chef powering the VegitaMeal app.
-    Your job is to generate a 7-day, strictly vegetarian Indian meal plan.
+    You are an elite Indian Clinical Dietitian. Schedule a 7-day meal plan ONLY using the exact meals from the 'SAFE MENU'.
     
     CRITICAL RULES:
-    1. RECIPE NAMES, NOT RAW INGREDIENTS: Users want to see meals (e.g., "Ragi Dosa with Sambar", "Palak Paneer with Roti"). Do NOT just list raw ingredients.
-    2. SAFE INGREDIENTS ONLY: You must build these recipes using ONLY the ingredients provided in the 'SAFE INGREDIENT BASKET'. 
-    3. NO TEXT: Output MUST be strictly valid JSON. 
+    1. STRICT MENU COMPLIANCE: Use the exact 'meal_name' and base macros provided. Do not invent meals.
+    2. SERVINGS MATH: You must select 1 Breakfast, 1 Lunch, and 1 Dinner per day. Adjust the "servings" multiplier (e.g., 0.8, 1.0, 1.5) to hit the User Targets.
+    3. MACRO BALANCING: 
+       - Carbs should be roughly 45-55% of total calories.
+       - Ensure daily Sodium is strictly below the target limit.
+       - Ensure daily Fiber meets or exceeds the target.
+    4. OUTPUT FORMAT: Strictly raw JSON. No markdown blocks.
     
     REQUIRED JSON SCHEMA:
     {
       "day_1": {
-        "breakfast": {
-            "meal_name": "Ragi Porridge with Buffalo Milk",
-            "key_ingredients_used": ["Ragi (Eleusine coracana)", "Milk, whole, Buffalo"],
-            "approx_calories": 400
-        },
-        "lunch": {
-            "meal_name": "Yellow Dal with Bajra Roti and Brinjal Sabzi",
-            "key_ingredients_used": ["Lentil whole, yellowish", "Bajra", "Brinjal-4"],
-            "approx_calories": 650
-        },
-        "dinner": { ... }
+        "breakfast": {"meal_name": "Menu Name", "servings": 1.0, "calories": 387, "protein_g": 9.3, "fiber_g": 5.7, "sodium_mg": 5.5},
+        "lunch": {...},
+        "dinner": {...},
+        "daily_totals": {
+          "calories": 1500, "protein_g": 55, "carbs_g": 180, "fat_g": 45, "fiber_g": 32, "sodium_mg": 1200
+        }
       },
       ... up to day_7
     }
@@ -101,14 +159,14 @@ def generate_weekly_plan(safe_basket, targets):
     
     user_prompt = f"""
     USER TARGETS:
-    Daily Calories: {targets.get('daily_calorie_target', 2000)} kcal
-    Daily Protein: {targets.get('protein_target_g', 50)} g
+    Calories: {targets.get('daily_calorie_target')} kcal
+    Protein: {targets.get('protein_target_g')} g
+    Fiber: {targets.get('fiber_target_g')} g minimum
+    Sodium Limit: {targets.get('sodium_target_mg')} mg maximum
+    Medical Conditions: {', '.join(targets.get('conditions', ['None']))}
     
-    SAFE INGREDIENT BASKET:
-    {basket_str}
-    INSTRUCTIONS BASED ON CONDITIONS:
-    If 'obesity' is listed, strictly avoid pairing high-carb items together.
-    If 'constipation' is listed, you MUST prioritize items from the basket that are high in dietary fiber.
+    SAFE MENU:
+    {menu_str}
     """
     
     try:
@@ -118,12 +176,11 @@ def generate_weekly_plan(safe_basket, targets):
                 {"role": "user", "content": user_prompt}
             ],
             model="llama-3.3-70b-versatile",
-            temperature=0.2, 
-            max_tokens=4000, 
+            temperature=0.1, 
+            max_tokens=5000,
         )
         
         raw_output = response.choices[0].message.content.strip()
-        
         if raw_output.startswith("```json"):
             raw_output = raw_output[7:-3].strip()
             

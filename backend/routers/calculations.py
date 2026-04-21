@@ -17,6 +17,22 @@ router = APIRouter(prefix="/calculations", tags=["calculations"])
 # Standalone calculate endpoint (without prefix)
 calculate_router = APIRouter(tags=["calculations"])
 
+def get_clinical_snacks(conditions):
+    """Provides fixed, safe snacks based on the user's primary medical condition."""
+    conditions_lower = [c.lower() for c in conditions]
+    
+    if "constipation" in conditions_lower:
+        return ["Ripe Papaya Bowl (High Fiber)", "Soaked Chia Seeds in Water (Hydration & Fiber)"]
+    if "hypertension" in conditions_lower:
+        return ["Banana (High Potassium)", "Coconut Water (No added salt)"]
+    if "obesity" in conditions_lower:
+        return ["Cucumber & Carrot Sticks", "Green Tea (Unsweetened)"]
+    if "thyroid" in conditions_lower:
+        return ["Roasted Pumpkin Seeds (Selenium)", "Apple"]
+        
+    # Default for healthy users
+    return ["Mixed Nuts (Almonds & Walnuts)", "Seasonal Fresh Fruit"]
+
 
 @calculate_router.post("/calculate", response_model=CalculationResponse)
 def recalculate(
@@ -96,7 +112,7 @@ def get_food_plan(current_user: User = Depends(get_current_user), db: Session = 
         "food_plan": plan
     }
 
-from services.diet_engine import get_safe_basket, generate_weekly_plan 
+from services.diet_engine import get_safe_basket, generate_weekly_plan , get_safe_menu
 import json
 
 
@@ -120,15 +136,18 @@ def create_ai_weekly_plan(
     targets = {
         "daily_calorie_target": calc.daily_calorie_target,
         "protein_target_g": calc.protein_target_g,
-        "conditions": conditions if conditions else None
+        "conditions": conditions 
     }
 
     # 3. Apply Medical Constraints & Generate Plan
-    safe_basket = get_safe_basket(conditions)
-    weekly_plan_json = generate_weekly_plan(safe_basket, targets)
+    #safe_basket = get_safe_basket(conditions)
+    safe_menu = get_safe_menu(conditions) # <-- Updated function name
+    weekly_plan_json = generate_weekly_plan(safe_menu, targets)
     
     if not weekly_plan_json:
         raise HTTPException(status_code=500, detail="AI failed to generate plan")
+    
+    weekly_plan_json["daily_snacks"] = get_clinical_snacks(conditions)
 
     # 4. Save to Database
     new_plan = UserWeeklyPlan(
