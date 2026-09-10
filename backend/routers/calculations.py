@@ -112,7 +112,7 @@ def get_food_plan(current_user: User = Depends(get_current_user), db: Session = 
         "food_plan": plan
     }
 
-from services.diet_engine import get_safe_basket, generate_weekly_plan , get_safe_menu
+from services.diet_engine import  generate_weekly_plan , get_safe_menu
 import json
 
 
@@ -133,10 +133,40 @@ def create_ai_weekly_plan(
     if not calc:
         raise HTTPException(status_code=404, detail="Please calculate targets first")
         
+    # ICMR approximate calorie densities for side items not in recipes
+    MILK_KCAL_PER_ML  = 0.67   # whole milk ~67 kcal/100ml
+    FRUIT_KCAL_PER_G  = 0.50   # mixed fruit ~50 kcal/100g
+    SUGAR_KCAL_PER_G  = 4.0    # for chai/tea sugar allowance
+    
+    # Fetch ICMR food group reference for this user (same query as food-plan endpoint)
+    ref = db.query(FoodGroupReference).filter_by(
+        gender=profile.gender,
+        category_of_work=profile.activity_level
+    ).first()
+    
+    # Calculate calories that come from side items OUTSIDE the 3 main meals
+    # These are already accounted for in the ICMR daily_calorie_target
+    # but won't appear in recipes.json
+    side_item_kcal = 0
+    if ref:
+        side_item_kcal += (ref.milk_curd_ml or 0) * MILK_KCAL_PER_ML
+        side_item_kcal += (ref.fruits_g    or 0) * FRUIT_KCAL_PER_G
+        side_item_kcal += 20 * SUGAR_KCAL_PER_G  # ~20g sugar in daily tea/chai
+    
+    side_item_kcal = round(side_item_kcal)
+    
+    # Meal target = total target minus what comes from side items
+    # Also reserve ~200 kcal for the clinical snacks already in the plan
+    meal_calorie_target = calc.daily_calorie_target - side_item_kcal - 200
+    
     targets = {
-        "daily_calorie_target": calc.daily_calorie_target,
-        "protein_target_g": calc.protein_target_g,
-        "conditions": conditions 
+        "daily_calorie_target": max(calc.daily_calorie_target - side_item_kcal - 200, 1000),  # floor at 1000 for safety
+        "protein_target_g":     calc.protein_target_g,
+        "fiber_target_g":       getattr(calc, 'fiber_target_g', 30),
+        "sodium_target_mg":     getattr(calc, 'sodium_target_mg', 2300),
+        "conditions":           conditions,
+        # Pass TEE for dynamic obesity cap (Fix 2)
+        "tee":                  calc.tee,
     }
 
     # 3. Apply Medical Constraints & Generate Plan
@@ -169,6 +199,7 @@ def create_ai_weekly_plan(
     }
 
 
+
 @router.get("/my-weekly-plan")
 def get_saved_plan(
     current_user: User = Depends(get_current_user), 
@@ -188,3 +219,4 @@ def get_saved_plan(
         "conditions_applied": json.loads(latest_plan.conditions_applied),
         "plan": json.loads(latest_plan.plan_data)
     }
+

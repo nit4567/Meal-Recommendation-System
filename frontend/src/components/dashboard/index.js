@@ -6,3 +6,4 @@ export { HealthAlert } from './HealthAlert';
 export { ComingSoon } from './ComingSoon';
 export { FoodGroupPieChart } from './FoodGroupPieChart';
 export { LunchSuggestion } from './LunchSuggestion';
+export { WeeklyPlanCard } from './WeeklyPlanCard';

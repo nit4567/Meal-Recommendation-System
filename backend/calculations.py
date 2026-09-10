@@ -69,11 +69,12 @@ def calculate_targets(profile: UserProfile) -> dict:
     # Energy
     bmr = calculate_bmr(profile.weight_kg, profile.gender, profile.age)
     pal = get_pal(profile.activity_level)
-    #The total energy requirement or the total energy expenditure (TEE) is calculated based on a 
-    #multiplication of basal metabolic rate (BMR) to physical activity level (PAL): TEE = BMR X PAL. 
     tee = bmr * pal
     
-    # Adjust for goal
+    # Parse medical conditions
+    medical_conditions = json.loads(profile.medical_conditions or "[]")
+    
+    # Adjust for goal (obesity overrides this below)
     calorie_target = tee
     if profile.goal == "weight_loss":
         calorie_target -= 400
@@ -87,7 +88,6 @@ def calculate_targets(profile: UserProfile) -> dict:
     protein_target = profile.weight_kg * protein_multiplier
     
     # Iron - ICMR 2020
-    medical_conditions = json.loads(profile.medical_conditions or "[]")
     iron_target = 19 if profile.gender == "male" else 29
     if "pregnancy" in medical_conditions:
         iron_target = 35
@@ -106,21 +106,57 @@ def calculate_targets(profile: UserProfile) -> dict:
     # Essential fatty acids - ICMR 2020
     n6_pufa = 6.6
     n3_pufa = 2.2
-    
+
+    # --- Condition-specific fields (None by default) ---
+    sodium_target_mg = None
+    water_target_ml = None
+    medication_alert = False
+    potassium_target_mg = 2500
+
+
+    # --- HYPERTENSION (DASH protocol) ---
+    if "hypertension" in medical_conditions:
+        sodium_target_mg = 1300
+        potassium_target_mg = 3500   # <-- ADD THIS
+        visible_fat_target = round(visible_fat_target * 0.80)
+        calcium_target = max(calcium_target, 1200)
+    # --- OBESITY ---
+    if "obesity" in medical_conditions or bmi_category == "obese":
+        calorie_target = tee - 500                              # overrides goal adjustment
+        fiber_target = max(fiber_target, 35)
+        protein_target = profile.weight_kg * 1.2               # muscle preservation
+
+    # --- CONSTIPATION ---
+    if "constipation" in medical_conditions:
+        fiber_target = max(fiber_target, 35)
+        water_target_ml = 2000
+
+    # --- HYPOTHYROIDISM ---
+    if "thyroid" in medical_conditions or "hypothyroidism" in medical_conditions:
+        calorie_target = calorie_target * 0.90                  # slower BMR
+        sodium_target_mg = sodium_target_mg or 1800             # don't override hypertension's stricter 1300
+        medication_alert = True
+
     return {
         "bmi": round(bmi, 1),
         "bmi_category": bmi_category,
         "bmr": round(bmr),
         "tee": round(tee),
         "daily_calorie_target": round(calorie_target),
-        "protein_target_g": round(protein_target),
+        "protein_target_g": round(protein_target, 1),
         "iron_target_mg": iron_target,
         "calcium_target_mg": calcium_target,
-        "fiber_target_g": round(fiber_target),
-        "visible_fat_target_g": round(visible_fat_target),
+        "fiber_target_g": round(fiber_target, 1),
+        "visible_fat_target_g": round(visible_fat_target, 1),
         "n6_pufa_target_g": n6_pufa,
-        "n3_pufa_target_g": n3_pufa
+        "n3_pufa_target_g": n3_pufa,
+        # Condition-specific — None/False if condition not present
+        "sodium_target_mg": sodium_target_mg,
+        "potassium_target_mg": potassium_target_mg,
+        "water_target_ml": water_target_ml,
+        "medication_alert": medication_alert,
     }
+
 
 def generate_food_plan(profile: UserProfile, ref: FoodGroupReference):
     

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
@@ -6,9 +5,7 @@ import { useCalculation } from '../../hooks/useCalculation';
 import { useFoodPlan } from '../../hooks/useFoodPlan';
 import { getBMICategory, getGoalMessage } from '../../utils/icmr.calculations';
 import { ROUTES } from '../../constants/routes';
-import { Navbar } from '../../components/layout/Navbar';
 import { PageContainer } from '../../components/layout/PageContainer';
-import { Footer } from '../../components/layout/Footer';
 import { Loading } from '../../components/common/Loading';
 import { ErrorMessage } from '../../components/common/ErrorMessage';
 import {
@@ -21,8 +18,7 @@ import {
   FoodGroupPieChart,
   LunchSuggestion,
 } from '@components/dashboard';
-
-
+import { WeeklyPlanCard } from '../../components/dashboard/WeeklyPlanCard'; // ← new
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -30,11 +26,8 @@ export const Dashboard = () => {
   const { calculation, loading: calcLoading, error: calcError } = useCalculation();
   const { foodPlan, loading: foodPlanLoading, error: foodPlanError } = useFoodPlan();
 
-
-  // Redirect to profile creation if no profile found
   React.useEffect(() => {
-    // console.log('profileError', profileError);
-    if (profileError==="Profile not found") {
+    if (profileError === 'Profile not found') {
       navigate(ROUTES.PROFILE_CREATE);
     }
   }, [profileError, navigate]);
@@ -54,8 +47,8 @@ export const Dashboard = () => {
     return (
       <PageContainer>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <ErrorMessage 
-            message={error || 'Failed to load data'} 
+          <ErrorMessage
+            message={error || 'Failed to load data'}
             onRetry={() => window.location.reload()}
           />
         </div>
@@ -66,11 +59,8 @@ export const Dashboard = () => {
   const bmiInfo = getBMICategory(calculation.bmi);
   const goalMessage = getGoalMessage(profile.goal);
 
-
   return (
     <PageContainer withNavbar>
-      {/* <Navbar /> */}
-
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <BMICard
           bmi={calculation.bmi}
@@ -88,9 +78,12 @@ export const Dashboard = () => {
 
         {foodPlan && <FoodGroupPieChart foodPlan={foodPlan} />}
 
-        {foodPlan && profile && (
+        {/* {foodPlan && profile && (
           <LunchSuggestion profile={profile} foodPlan={foodPlan} />
-        )}
+        )} */}
+
+        {/* ── AI Weekly Meal Plan ─────────────────────────────────────────── */}
+        <WeeklyPlanCard />
 
         <div className="mt-8 mb-8">
           <h3 className="text-2xl font-bold text-gray-900 mb-4">Daily Nutrient Targets</h3>
@@ -107,7 +100,6 @@ export const Dashboard = () => {
                   : 'Based on ICMR 2020 RDA guidelines'
               }
             />
-
             <NutrientCard
               title="Iron"
               value={calculation.iron_target_mg}
@@ -120,7 +112,6 @@ export const Dashboard = () => {
                   : 'Essential for oxygen transport'
               }
             />
-
             <NutrientCard
               title="Calcium"
               value={calculation.calcium_target_mg}
@@ -142,17 +133,18 @@ export const Dashboard = () => {
           visibleFat={calculation.visible_fat_target_g}
           n6PUFA={calculation.n6_pufa_target_g}
           n3PUFA={calculation.n3_pufa_target_g}
+          sodium={calculation.sodium_target_mg}
+          water={calculation.water_target_ml}
         />
 
         <HealthAlert
           medicalConditions={profile.medicalConditions}
           allergies={profile.allergies}
+          medicationAlert={calculation.medication_alert}
         />
 
         <ComingSoon />
       </div>
-
-      {/* <Footer /> */}
     </PageContainer>
   );
 };

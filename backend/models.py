@@ -61,9 +61,15 @@ class UserCalculation(Base):
     visible_fat_target_g = Column(Float)
     n6_pufa_target_g = Column(Float)
     n3_pufa_target_g = Column(Float)
+    # Condition-specific fields
+    sodium_target_mg = Column(Float, nullable=True)
+    potassium_target_mg = Column(Float, nullable=True)
+    water_target_ml = Column(Float, nullable=True)
+    medication_alert = Column(Integer, default=0)  # SQLite-safe bool
     calculated_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="calculations")
+
 
 class FoodGroupReference(Base):
     __tablename__ = "food_group_reference"

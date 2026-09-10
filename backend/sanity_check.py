@@ -22,7 +22,7 @@ def run_sanity_check():
     code_to_name = {item['food_code']: item['name'] for item in ingredients_db}
 
     print("="*60)
-    print("🥘 VEGITAMEAL SANITY CHECK: DB MAPPING VALIDATION")
+    print("🥘 NUTRITION PLANNER SANITY CHECK: DB MAPPING VALIDATION")
     print("="*60)
 
     # Process each meal type (breakfasts, lunches, dinners)

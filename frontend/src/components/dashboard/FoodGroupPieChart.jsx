@@ -41,7 +41,7 @@ export const FoodGroupPieChart = ({ foodPlan }) => {
       </h3>
 
       <div className="h-72">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minHeight={280}>
           <PieChart>
             <Pie
               data={data}

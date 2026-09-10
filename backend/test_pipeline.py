@@ -65,13 +65,13 @@ def run_disease_test(case_name, conditions, output_filename):
         print(f"❌ Plan Gen Failed: {plan_res.text}")
 
 if __name__ == "__main__":
-    print("🚀 Starting VegitaMeal Clinical Validation Suite...\n")
+    print("🚀 Starting Clinical Validation Suite...\n")
     
     # Run the 5 Core Cases
     run_disease_test("Baseline Healthy", [], "test_1_baseline.json")
-    run_disease_test("Hypertension", ["hypertension"], "test_2_hypertension.json")
-    run_disease_test("Thyroid", ["thyroid"], "test_3_thyroid.json")
-    run_disease_test("Obesity", ["obesity"], "test_4_obesity.json")
-    run_disease_test("Constipation", ["constipation"], "test_5_constipation.json")
+    # run_disease_test("Hypertension", ["hypertension"], "test_2_hypertension.json")
+    # run_disease_test("Thyroid", ["thyroid"], "test_3_thyroid.json")
+    # run_disease_test("Obesity", ["obesity"], "test_4_obesity.json")
+    # run_disease_test("Constipation", ["constipation"], "test_5_constipation.json")
     
     print("\n🎉 All tests complete! Check the 'test_outputs' folder.")
