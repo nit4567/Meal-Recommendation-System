@@ -173,8 +173,8 @@ The script will:
 
 ## 📜 Academic Context & Acknowledgments
 
-This project was developed as a **Bachelor of Technology Project / Dual Degree Thesis** in the **Department of Agricultural and Food Engineering, Indian Institute of Technology Kharagpur**, under the supervision of **Prof. Gayatri Mishra**.
+This project was developed as a **Bachelor of Technology Project Thesis** in the **Department of Agricultural and Food Engineering, Indian Institute of Technology Kharagpur**
 
 Nutritional benchmarks and food composition metrics are derived from:
 - **ICMR-National Institute of Nutrition (2020):** *Nutrient Requirements for Indians*.
-- **Longvah, T., et al. (2017):** *Indian Food Composition Tables (IFCT)*, National Institute of Nutrition.
+- **Longvah, et al. (2017):** *Indian Food Composition Tables (IFCT)*, National Institute of Nutrition.
